@@ -1,6 +1,26 @@
 import Task from "../models/Task.js";
 import User from "../models/User.js";
 
+const publicTask = (task) => {
+  const t = task.toObject ? task.toObject() : task;
+  let responsable = t.responsable;
+  if (responsable && typeof responsable === "object" && responsable._id) {
+    responsable = {
+      id: responsable._id,
+      name: responsable.name,
+      email: responsable.email,
+    };
+  }
+  return {
+    id: t._id,
+    title: t.title,
+    description: t.description,
+    completed: t.completed,
+    responsable,
+    owner: t.owner,
+  };
+};
+
 export const createTaskController = async (req, res, next) => {
   try {
     const { title, description, responsable } = req.body;
@@ -20,7 +40,7 @@ export const createTaskController = async (req, res, next) => {
     });
     res
       .status(201)
-      .json({ success: true, message: "Task created", data: task });
+      .json({ success: true, message: "Task created", data: publicTask(task) });
   } catch (err) {
     next(err);
   }
@@ -30,7 +50,11 @@ export const listTasksController = async (req, res, next) => {
   try {
     const filter = req.userRole === "admin" ? {} : { responsable: req.userId };
     const tasks = await Task.find(filter).populate("responsable", "name email");
-    res.json({ success: true, message: "Tasks retrieved", data: tasks });
+    res.json({
+      success: true,
+      message: "Tasks retrieved",
+      data: tasks.map(publicTask),
+    });
   } catch (err) {
     next(err);
   }
@@ -62,7 +86,7 @@ export const completeTaskController = async (req, res, next) => {
     res.json({
       success: true,
       message: newCompleted ? "Task completed" : "Task marked pending",
-      data: task,
+      data: publicTask(task),
     });
   } catch (err) {
     next(err);
@@ -88,7 +112,11 @@ export const assignTaskController = async (req, res, next) => {
         .status(404)
         .json({ success: false, message: "Task not found" });
     }
-    res.json({ success: true, message: "Responsible assigned", data: task });
+    res.json({
+      success: true,
+      message: "Responsible assigned",
+      data: publicTask(task),
+    });
   } catch (err) {
     next(err);
   }
