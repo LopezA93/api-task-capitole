@@ -1,13 +1,18 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import swaggerUi from "swagger-ui-express";
 import authRoutes from "./routes/authRoutes.js";
 import taskRoutes from "./routes/taskRoutes.js";
 import errorHandler from "./middlewares/errorHandler.js";
 import userRoutes from "./routes/userRoutes.js";
 
+import swaggerDoc from "../swagger.json" with { type: "json" };
+
 const app = express();
 app.set("trust proxy", 1);
+app.use(helmet({ contentSecurityPolicy: false }));
 
 const origins = ["http://localhost:5173", "https://task-capitole.vercel.app"];
 
@@ -26,6 +31,8 @@ const apiLimiter = rateLimit({
   },
 });
 app.use("/", apiLimiter);
+
+app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDoc));
 
 app.use("/auth", authRoutes);
 app.use("/tasks", taskRoutes);
